@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../state/StoreContext';
 import { useChart } from '../components/shared';
+import { PendingCalendar } from '../components/PendingCalendar';
 import {
   fmt, fmtFull, daysUntil, expSum, expenses, catColor, catIcon,
   computeNextActions, computePhase, PHASE_LABELS, PHASE_SUB, MONTHS, MONTHS_SHORT,
@@ -98,7 +99,6 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
   };
 
   const recent = periodTxs.filter(t => t.amt < 0 && !['Transferencias', 'Ingresos'].includes(t.cat)).slice(0, 8);
-  const upcoming5 = state.pending.filter(p => !p.paid).sort((a, b) => new Date(a.due) - new Date(b.due)).slice(0, 5);
   const urgent = actions.filter(a => a.tone === 'critical').length;
 
   return (
@@ -265,23 +265,8 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
       {/* Próximos + Recientes */}
       <div className="grid-2">
         <div className="card">
-          <div className="card-head"><span className="card-title">Próximos vencimientos</span></div>
-          {upcoming5.length === 0
-            ? <div className="empty"><div className="empty-icon">✓</div><div className="empty-text">Sin pendientes</div></div>
-            : upcoming5.map(p => {
-              const d = daysUntil(p.due);
-              const over = d < 0;
-              return (
-                <div key={p.id} className="pending-item">
-                  <div className="pending-icon" style={{ background: catColor(p.cat) + '22' }}>{p.icon}</div>
-                  <div className="pending-info">
-                    <div className="pending-name">{p.name}</div>
-                    <div className={'pending-due' + (over ? ' overdue' : '')}>{over ? `Vencido hace ${Math.abs(d)}d` : d === 0 ? 'Hoy' : `En ${d} días`}</div>
-                  </div>
-                  <div className={'pending-amt' + (over ? ' amt-neg' : '')}>{fmtFull(p.amt)}</div>
-                </div>
-              );
-            })}
+          <div className="card-head"><span className="card-title">Calendario de pagos</span></div>
+          <PendingCalendar pending={state.pending} onPay={markPaid} compact />
         </div>
         <div className="card">
           <div className="card-head"><span className="card-title">Últimos movimientos</span></div>
