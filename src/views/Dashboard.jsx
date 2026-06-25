@@ -140,7 +140,7 @@ export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, open
           <PendingCalendar pending={state.pending} onPay={markPaid} compact />
         </div>
 
-        <div className="card">
+        <div className="card" data-tone="red">
           <div className="card-head">
             <span className="card-title">Deudas</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -178,7 +178,7 @@ export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, open
 
       {/* NIVEL 3 · Plan & Fase + Últimos movimientos */}
       <div className="grid-2">
-        <div className="card">
+        <div className="card" data-tone="lime">
           <div className="card-head">
             <span className="card-title">Plan &amp; Fase</span>
             <span style={{ fontSize: 11, color: 'var(--accent)', fontFamily: 'var(--mono)' }}>{PHASE_LABELS[phase]}</span>
@@ -221,7 +221,7 @@ export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, open
 
       {/* NIVEL 4 · Gasto mensual + Categorías */}
       <div className="grid-2">
-        <div className="card">
+        <div className="card" data-tone="blue">
           <div className="card-head">
             <span className="card-title">Gasto mensual</span>
             <div className="toggle-row">
@@ -235,7 +235,7 @@ export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, open
               : <canvas ref={monthlyRef} />}
           </div>
         </div>
-        <div className="card">
+        <div className="card" data-tone="purple">
           <div className="card-head"><span className="card-title">Categorías</span></div>
           <div style={{ position: 'relative', height: 160 }}>
             {donutTotal === 0

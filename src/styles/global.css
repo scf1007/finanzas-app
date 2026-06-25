@@ -40,9 +40,9 @@
   --topbar-h: 56px;
 
   /* Radii — Tahoe is rounder */
-  --r-sm: 8px;
-  --r: 14px;
-  --r-lg: 18px;
+  --r-sm: 12px;
+  --r: 20px;
+  --r-lg: 26px;
   --pill: 999px;
 
   /* Shadows */
@@ -162,9 +162,7 @@ nav:hover::before { opacity: 1; }
 nav:not(:hover) .nav-header { opacity: 0; }
 .nav-header { transition: opacity .22s; }
 
-.nav-items { flex: 1; padding: 10px 14px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
-/* Cuando se expande, los items vuelven arriba para dar aire a las secciones */
-nav:hover .nav-items { justify-content: flex-start; }
+.nav-items { flex: 1; padding: 24px 14px 10px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 3px; justify-content: flex-start; }
 .nav-item {
   display: flex; align-items: center; gap: 13px;
   padding: 10px; border-radius: var(--r-sm);
@@ -185,10 +183,11 @@ nav:hover .nav-item.active { background: var(--accent-dim); }
 .nav-item .nav-label { opacity: 0; transition: opacity .2s; }
 nav:hover .nav-item .nav-label { opacity: 1; }
 
-.nav-section { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding: 14px 10px 6px; margin-top: 4px; white-space: nowrap; overflow: hidden; opacity: 0; transition: opacity .2s; }
+.nav-section { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); height: 28px; display: flex; align-items: flex-end; padding: 0 10px 6px; margin-top: 4px; white-space: nowrap; overflow: hidden; opacity: 0; transition: opacity .2s; }
 nav:hover .nav-section { opacity: 1; }
-/* Cuando está colapsado, las secciones se vuelven un separador sutil */
-nav:not(:hover) .nav-section { padding: 8px 10px 2px; height: 1px; }
+/* Colapsado: el texto se oculta pero la sección reserva el mismo alto, */
+/* así los items de abajo no se desplazan al hacer hover. */
+nav:not(:hover) .nav-section { opacity: 0; }
 
 .nav-footer { padding: 14px 18px; overflow: hidden; white-space: nowrap; opacity: 0; transition: opacity .22s; }
 nav:hover .nav-footer { opacity: 1; }
@@ -291,19 +290,30 @@ main::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
   position: relative;
   overflow: hidden;
 }
-/* Tinte semántico opcional por KPI: se activa con data-accent */
-.card-sm[data-accent]::before {
+/* ── Tinte de subtono por módulo ──────────────────────────── */
+/* Cualquier card (grande o KPI) puede llevar un subtono del color */
+/* de uno de sus elementos. data-accent (KPIs) y data-tone (cards). */
+.card-sm[data-accent]::before,
+.card[data-tone]::before {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse 70% 90% at 100% 0%, var(--kpi-tint, transparent), transparent 70%);
+  border-radius: inherit;
+  background: radial-gradient(ellipse 75% 80% at 100% 0%, var(--tone, transparent), transparent 72%);
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.6;
 }
-.card-sm[data-accent="lime"] { --kpi-tint: rgba(168,255,71,0.10); }
-.card-sm[data-accent="red"] { --kpi-tint: rgba(255,107,107,0.10); }
-.card-sm[data-accent="blue"] { --kpi-tint: rgba(107,182,255,0.11); }
-.card-sm[data-accent="purple"] { --kpi-tint: rgba(179,157,255,0.11); }
-.card-sm[data-accent="yellow"] { --kpi-tint: rgba(255,206,92,0.11); }
+.card-sm[data-accent] { --tone: transparent; }
+.card-sm[data-accent="lime"]   { --tone: rgba(168,255,71,0.10); }
+.card-sm[data-accent="red"]    { --tone: rgba(255,107,107,0.10); }
+.card-sm[data-accent="blue"]   { --tone: rgba(107,182,255,0.11); }
+.card-sm[data-accent="purple"] { --tone: rgba(179,157,255,0.11); }
+.card-sm[data-accent="yellow"] { --tone: rgba(255,206,92,0.11); }
+/* Subtonos para módulos grandes, más suaves (área mayor) */
+.card[data-tone="lime"]   { --tone: rgba(168,255,71,0.07); }
+.card[data-tone="red"]    { --tone: rgba(255,107,107,0.07); }
+.card[data-tone="blue"]   { --tone: rgba(107,182,255,0.08); }
+.card[data-tone="purple"] { --tone: rgba(179,157,255,0.08); }
+.card[data-tone="yellow"] { --tone: rgba(255,206,92,0.08); }
 [data-theme="light"] .card {
   background: linear-gradient(155deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.15) 45%), var(--surface);
 }
