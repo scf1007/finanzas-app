@@ -1,3 +1,11 @@
+/* ── PP Neue Montreal (pesos reales del diseñador) ── */
+@font-face { font-family: 'PP Neue Montreal'; src: url('/fonts/PPNeueMontreal-Thin.woff2') format('woff2'); font-weight: 250; font-style: normal; font-display: swap; }
+@font-face { font-family: 'PP Neue Montreal'; src: url('/fonts/PPNeueMontreal-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'PP Neue Montreal'; src: url('/fonts/PPNeueMontreal-Book.woff2') format('woff2'); font-weight: 375; font-style: normal; font-display: swap; }
+@font-face { font-family: 'PP Neue Montreal'; src: url('/fonts/PPNeueMontreal-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'PP Neue Montreal'; src: url('/fonts/PPNeueMontreal-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'PP Neue Montreal'; src: url('/fonts/PPNeueMontreal-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+
 :root {
   /* Base — slightly warmer dark for liquid-glass feel */
   --bg: #0a0a0c;
@@ -31,9 +39,11 @@
   --purple: #b39dff;  --purple-dim: rgba(179, 157, 255, 0.12);
   --blue: #6bb6ff;    --blue-dim: rgba(107, 182, 255, 0.12);
 
-  /* Typography (SF Pro stack) */
-  --mono: ui-monospace, 'SF Mono', Menlo, 'Cascadia Mono', monospace;
-  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+  /* Typography — PP Neue Montreal */
+  /* --mono ya no es monoespaciada: es Montreal con cifras tabulares (tnum), */
+  /* aplicadas vía .num donde las columnas deben alinear. */
+  --mono: 'PP Neue Montreal', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans: 'PP Neue Montreal', -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
 
   /* Layout */
   --nav-w: 240px;
@@ -95,22 +105,22 @@
 html, body { height: 100%; overflow: hidden; }
 #root { display: flex; height: 100%; }
 body {
-  /* Ambient gradient gives backdrop-filter something to refract */
+  /* Monotono neutro muy sutil: leve aclarado superior, sin tinte de color */
   background:
-    radial-gradient(ellipse 80% 50% at 30% -10%, var(--amb1, rgba(168,255,71,0.045)), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 90% 100%, var(--amb2, rgba(179,157,255,0.04)), transparent 60%),
+    radial-gradient(ellipse 100% 60% at 50% -20%, var(--amb1, rgba(255,255,255,0.022)), transparent 70%),
     var(--bg);
   color: var(--text);
   font-family: var(--sans);
+  font-weight: 375;
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  letter-spacing: -0.003em;
+  letter-spacing: -0.006em;
 }
 [data-theme="light"] {
-  --amb1: rgba(109,179,0,0.06);
-  --amb2: rgba(124,92,255,0.05);
+  --amb1: rgba(20,20,40,0.025);
 }
 
 /* ── NAV (sidebar estilo referente: fundido al fondo, hover-expand) ── */
@@ -155,8 +165,10 @@ nav:hover {
 }
 nav:hover::before { opacity: 1; }
 
-.nav-header { padding: 22px 18px 16px; overflow: hidden; white-space: nowrap; }
-.nav-logo { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+/* Header, footer e items comparten el mismo borde izquierdo (24px), */
+/* que es donde arranca la columna de íconos (14px contenedor + 10px item). */
+.nav-header { padding: 22px 24px 14px; overflow: hidden; white-space: nowrap; }
+.nav-logo { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; color: var(--text); }
 .nav-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
 /* Logo y sub se ocultan cuando está colapsado */
 nav:not(:hover) .nav-header { opacity: 0; }
@@ -183,16 +195,16 @@ nav:hover .nav-item.active { background: var(--accent-dim); }
 .nav-item .nav-label { opacity: 0; transition: opacity .2s; }
 nav:hover .nav-item .nav-label { opacity: 1; }
 
-.nav-section { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); height: 28px; display: flex; align-items: flex-end; padding: 0 10px 6px; margin-top: 4px; white-space: nowrap; overflow: hidden; opacity: 0; transition: opacity .2s; }
+.nav-section { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); height: 28px; display: flex; align-items: flex-end; padding: 0 10px 6px; margin-top: 4px; white-space: nowrap; overflow: hidden; opacity: 0; transition: opacity .2s; }
 nav:hover .nav-section { opacity: 1; }
 /* Colapsado: el texto se oculta pero la sección reserva el mismo alto, */
 /* así los items de abajo no se desplazan al hacer hover. */
 nav:not(:hover) .nav-section { opacity: 0; }
 
-.nav-footer { padding: 14px 18px; overflow: hidden; white-space: nowrap; opacity: 0; transition: opacity .22s; }
+.nav-footer { padding: 14px 24px 16px; overflow: hidden; white-space: nowrap; opacity: 0; transition: opacity .22s; }
 nav:hover .nav-footer { opacity: 1; }
 .nav-account { font-size: 11px; color: var(--text3); line-height: 1.6; }
-.nav-balance { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--text); margin-top: 2px; letter-spacing: -0.025em; }
+.nav-balance { font-size: 19px; font-weight: 500; color: var(--text); margin-top: 3px; letter-spacing: -0.02em; }
 
 /* Toggle de tema, abajo a la izquierda */
 .theme-toggle {
@@ -229,7 +241,7 @@ nav:hover .theme-toggle .nav-label { opacity: 1; }
   font-family: inherit;
 }
 .mt-hamb:active { transform: scale(0.94); }
-.mt-logo { font-size: 13px; font-weight: 600; flex: 1; letter-spacing: -0.01em; }
+.mt-logo { font-size: 13px; font-weight: 500; flex: 1; letter-spacing: -0.01em; }
 .mt-actions { display: flex; gap: 6px; }
 .mt-actions button {
   width: 36px; height: 36px; border-radius: var(--r-sm);
@@ -256,11 +268,11 @@ main::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 /* ── VIEWS ── */
 .view { display: none; padding: 32px 40px; max-width: 1600px; margin: 0 auto; width: 100%; }
 .view.active { display: block; }
-.view-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.025em; }
-.view-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
+.view-title { font-size: 27px; font-weight: 500; margin-bottom: 5px; letter-spacing: -0.025em; line-height: 1.1; }
+.view-subtitle { font-size: 13px; font-weight: 375; color: var(--text2); margin-bottom: 28px; }
 
 /* ── GRID ── */
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 18px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
 .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 18px; }
 
@@ -321,7 +333,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
   background: linear-gradient(155deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 55%), var(--surface);
 }
 .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 8px; flex-wrap: wrap; }
-.card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); }
+.card-title { font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); }
 .card-action {
   font-size: 11px; color: var(--accent); cursor: pointer;
   padding: 5px 12px; border: 1px solid rgba(168,255,71,0.25);
@@ -331,10 +343,10 @@ main::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 .card-action:hover { background: var(--accent-dim); }
 
 /* ── KPI ── */
-.kpi-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); margin-bottom: 8px; }
-.kpi-value { font-size: 26px; font-weight: 700; font-family: var(--mono); letter-spacing: -0.03em; line-height: 1; }
+.kpi-label { font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+.kpi-value { font-size: 30px; font-weight: 700; letter-spacing: -0.035em; line-height: 1; }
 .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
-.kpi-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: var(--pill); margin-top: 8px; }
+.kpi-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: var(--pill); margin-top: 8px; }
 .badge-up { background: var(--green-dim); color: var(--green); }
 .badge-down { background: var(--red-dim); color: var(--red); }
 .badge-info { background: var(--purple-dim); color: var(--purple); }
@@ -363,10 +375,10 @@ main::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
 /* ── BUTTONS (pill, with glass highlight) ── */
 .btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 18px; border-radius: var(--pill);
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  border: none; font-family: inherit; letter-spacing: -0.005em;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 20px; border-radius: var(--pill);
+  font-size: 12px; font-weight: 500; line-height: 1; cursor: pointer;
+  border: none; font-family: inherit; letter-spacing: -0.005em; white-space: nowrap;
   transition: all .2s cubic-bezier(.4,0,.2,1);
 }
 .btn:active { transform: scale(0.97); }
@@ -376,13 +388,13 @@ main::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 .btn-ghost:hover { background: var(--surface3); color: var(--text); border-color: var(--border2); }
 .btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,107,107,0.2); }
 .btn-danger:hover { background: rgba(255,107,107,0.2); }
-.btn-sm { padding: 6px 12px; font-size: 11px; }
+.btn-sm { padding: 7px 14px; font-size: 11px; }
 
 /* ── TABLE ── */
 .table-wrap { overflow-x: auto; margin: 0 -4px; }
 .table-wrap::-webkit-scrollbar { height: 6px; }
 table { width: 100%; border-collapse: collapse; }
-th { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
 td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: rgba(255,255,255,0.025); }
@@ -410,7 +422,7 @@ tr:hover td { background: rgba(255,255,255,0.025); }
 .pending-info { flex: 1; min-width: 0; }
 .pending-name { font-size: 13px; font-weight: 500; }
 .pending-due { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.pending-amt { font-size: 14px; font-weight: 600; font-family: var(--mono); flex-shrink: 0; letter-spacing: -0.01em; }
+.pending-amt { font-size: 14px; font-weight: 500; font-family: var(--mono); flex-shrink: 0; letter-spacing: -0.01em; }
 .pending-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .overdue { color: var(--red) !important; }
 
@@ -424,7 +436,7 @@ tr:hover td { background: rgba(255,255,255,0.025); }
 .insight-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
 .insight-body { font-size: 13px; line-height: 1.55; color: var(--text2); }
 .insight-body strong { color: var(--text); }
-.insight-tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--pill); margin-right: 6px; }
+.insight-tag { display: inline-block; font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--pill); margin-right: 6px; }
 .tag-warn { background: var(--red-dim); color: var(--red); }
 .tag-ok { background: var(--green-dim); color: var(--green); }
 .tag-info { background: var(--blue-dim); color: var(--blue); }
@@ -451,9 +463,9 @@ tr:hover td { background: rgba(255,255,255,0.025); }
   max-height: 90vh; overflow-y: auto;
   box-shadow: var(--shadow-lg), var(--glass-hl);
 }
-.modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.02em; }
+.modal h3 { font-size: 17px; font-weight: 500; margin-bottom: 20px; letter-spacing: -0.02em; }
 .form-group { margin-bottom: 14px; }
-.form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; display: block; }
+.form-label { font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; display: block; }
 .form-input {
   width: 100%; background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--r-sm); color: var(--text);
@@ -484,7 +496,7 @@ tr:hover td { background: rgba(255,255,255,0.025); }
 .budget-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
 .budget-cat { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
 .budget-amounts { font-size: 12px; font-family: var(--mono); color: var(--text2); text-align: right; letter-spacing: -0.01em; }
-.budget-pct { font-size: 11px; font-weight: 700; }
+.budget-pct { font-size: 11px; font-weight: 500; }
 
 /* ── TOGGLE (segmented control, macOS-style) ── */
 .toggle-row { display: inline-flex; gap: 2px; background: var(--surface2); padding: 3px; border-radius: var(--pill); border: 1px solid var(--border); }
@@ -734,7 +746,7 @@ tr:hover td { background: rgba(255,255,255,0.025); }
   #view-movimientos tbody td:nth-child(5) {  /* Monto */
     grid-area: amt;
     font-family: var(--mono);
-    font-weight: 600;
+    font-weight: 500;
     font-size: 13px;
     text-align: right;
   }
@@ -785,5 +797,5 @@ tr:hover td { background: rgba(255,255,255,0.025); }
   padding: 44px 40px; max-width: 380px; width: 100%; text-align: center;
   box-shadow: var(--shadow-lg), var(--glass-hl);
 }
-.login-logo { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+.login-logo { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 6px; }
 .login-sub { font-size: 13px; color: var(--text2); margin-bottom: 28px; line-height: 1.6; }
