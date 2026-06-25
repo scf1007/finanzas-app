@@ -40,8 +40,18 @@ export function StoreProvider({ children }) {
 
   // ── Auth ──
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s ?? null));
+    const applySession = s => setSession(prev => {
+      const prevId = prev?.user?.id ?? null;
+      const nextId = s?.user?.id ?? null;
+      // undefined (cargando) → null/usuario es un cambio real; mismo id no.
+      if (prev !== undefined && prevId === nextId) return prev;
+      return s ?? null;
+    });
+    supabase.auth.getSession().then(({ data }) => applySession(data.session));
+    // Eventos como TOKEN_REFRESHED al volver a la pestaña traen un objeto de sesión
+    // nuevo pero el mismo usuario; propagarlos re-dispararía la carga y desmontaría
+    // el árbol (perdiendo formularios abiertos). La guarda por user.id lo evita.
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => applySession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -111,7 +121,8 @@ export function StoreProvider({ children }) {
     },
 
     async saveDebt(d) {
-      setState(s => ({ ...s, debts: s.debts.map(x => x.id === d.id ? d : x) }));
+      const isNew = !state.debts.some(x => x.id === d.id);
+      setState(s => ({ ...s, debts: isNew ? [...s.debts, d] : s.debts.map(x => x.id === d.id ? d : x) }));
       await Storage.upsertDebt(d); notify('💾 guardado');
     },
     async payDebt(debtId, monto, fecha) {
