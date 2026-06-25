@@ -159,17 +159,41 @@ export function DebtPayModal({ open, onClose, debtId }) {
 export function DebtEditModal({ open, onClose, debtId }) {
   const { state, saveDebt } = useStore();
   const debt = state.debts.find(d => d.id === debtId);
+  const isNew = open && !debt;
   const [f, setF] = useState({});
   useEffect(() => {
-    if (!open || !debt) return;
-    setF({
-      acreedor: debt.acreedor, saldo: debt.saldo, cuota: debt.cuota_actual,
-      tasa: (debt.tasa_ea * 100).toFixed(2), corte: debt.fecha_corte ? +debt.fecha_corte.slice(8) : '',
-    });
+    if (!open) return;
+    if (debt) {
+      setF({
+        acreedor: debt.acreedor, saldo: debt.saldo, cuota: debt.cuota_actual,
+        tasa: (debt.tasa_ea * 100).toFixed(2), corte: debt.fecha_corte ? +debt.fecha_corte.slice(8) : '',
+      });
+    } else {
+      setF({ acreedor: '', saldo: '', cuota: '', tasa: '', corte: '' });
+    }
   }, [open, debtId]);
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
   const save = () => {
+    if (isNew) {
+      if (!f.acreedor?.trim() || isNaN(+f.saldo) || +f.saldo < 0) return;
+      const saldo = +f.saldo;
+      const now = new Date();
+      const maxOrden = Math.max(0, ...state.debts.map(d => d.orden_ataque || 0));
+      const nd = {
+        id: uid(),
+        acreedor: f.acreedor.trim(),
+        saldo, saldo_inicial: saldo,
+        cuota_actual: +f.cuota > 0 ? +f.cuota : 0,
+        tasa_ea: !isNaN(+f.tasa) && +f.tasa >= 0 ? +f.tasa / 100 : 0,
+        orden_ataque: maxOrden + 1,
+        metodo_pago: 'manual',
+        fecha_corte: (+f.corte >= 1 && +f.corte <= 31)
+          ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(+f.corte).padStart(2, '0')}`
+          : null,
+      };
+      saveDebt(nd); onClose(); return;
+    }
     if (!debt) return;
     const upd = { ...debt };
     if (f.acreedor?.trim()) upd.acreedor = f.acreedor.trim();
@@ -187,12 +211,12 @@ export function DebtEditModal({ open, onClose, debtId }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar deuda" maxWidth={460}
+    <Modal open={open} onClose={onClose} title={isNew ? 'Nueva deuda' : 'Editar deuda'} maxWidth={460}
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" onClick={save}>Guardar cambios</button>
+        <button className="btn btn-primary" onClick={save}>{isNew ? 'Agregar deuda' : 'Guardar cambios'}</button>
       </>}>
-      <Field label="Acreedor"><input className="form-input" value={f.acreedor || ''} onChange={e => set('acreedor', e.target.value)} /></Field>
+      <Field label="Acreedor"><input className="form-input" value={f.acreedor || ''} onChange={e => set('acreedor', e.target.value)} placeholder={isNew ? 'Ej: Tarjeta CrediBanco' : ''} /></Field>
       <Row>
         <Field label="Saldo actual (COP)"><input className="form-input" type="number" value={f.saldo ?? ''} onChange={e => set('saldo', e.target.value)} /></Field>
         <Field label="Cuota mensual (COP)"><input className="form-input" type="number" value={f.cuota ?? ''} onChange={e => set('cuota', e.target.value)} /></Field>
@@ -202,7 +226,9 @@ export function DebtEditModal({ open, onClose, debtId }) {
         <Field label="Día de corte (1-31)"><input className="form-input" type="number" min={1} max={31} value={f.corte ?? ''} onChange={e => set('corte', e.target.value)} /></Field>
       </Row>
       <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>
-        Útil cuando cambia la cuota (ej: subir el abono a tu abuela al liberar otra deuda) o para corregir el saldo tras un extracto.
+        {isNew
+          ? 'La nueva deuda entra al final del orden de ataque; puedes reordenar después. La tasa EA define su urgencia (color).'
+          : 'Útil cuando cambia la cuota (ej: subir el abono a tu abuela al liberar otra deuda) o para corregir el saldo tras un extracto.'}
       </div>
     </Modal>
   );

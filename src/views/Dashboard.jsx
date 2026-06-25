@@ -5,9 +5,10 @@ import { PendingCalendar } from '../components/PendingCalendar';
 import {
   fmt, fmtFull, daysUntil, expSum, expenses, catColor, catIcon,
   computePhase, PHASE_LABELS, PHASE_SUB, MONTHS, MONTHS_SHORT,
+  STATE_COLOR, statePagoProximo, stateSaldo, stateGasto, stateIngreso, stateMeta, stateDeuda,
 } from '../logic';
 
-export default function Dashboard({ openDebtPay, openEditDebt }) {
+export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, openAddPending, goToMovimientos }) {
   const { state, markPaid, theme } = useStore();
   const [mode, setMode] = useState('year');
   const [year, setYear] = useState('2026');
@@ -108,49 +109,62 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
         </div>
       </div>
 
-      {/* NIVEL 1 · KPIs */}
+      {/* NIVEL 1 · KPIs con color-estado */}
       <div className="grid-4">
         {[
-          { label: `Gasto · ${periodLabel}`, val: fmt(periodExp), badge: 'badge-info', btxt: 'COP' },
-          { label: 'Ingresos período', val: fmt(periodInc), badge: 'badge-up', btxt: 'COP' },
-          { label: 'Saldo total', val: fmt(totalBal), badge: 'badge-up', btxt: '↑' },
-          { label: 'Pago próximo 30d', val: fmt(pendUpcoming.reduce((s, p) => s + p.amt, 0)), badge: pendOverdue ? 'badge-down' : 'badge-info', btxt: pendOverdue ? `${pendOverdue} vencidos` : 'Al día' },
-        ].map(k => (
-          <div key={k.label} className="card-sm">
-            <div className="kpi-label">{k.label}</div>
-            <div className="kpi-value">{k.val}</div>
-            <span className={`kpi-badge ${k.badge}`}>{k.btxt}</span>
-          </div>
-        ))}
+          { label: `Gasto · ${periodLabel}`, val: fmt(periodExp), st: stateGasto(periodExp, periodInc) },
+          { label: 'Ingresos período', val: fmt(periodInc), st: stateIngreso(periodInc) },
+          { label: 'Saldo total', val: fmt(totalBal), st: stateSaldo(totalBal, state.pending) },
+          { label: 'Pago próximo 30d', val: fmt(pendUpcoming.reduce((s, p) => s + p.amt, 0)), st: statePagoProximo(state.pending), note: pendOverdue ? `${pendOverdue} vencidos` : 'Al día' },
+        ].map(k => {
+          const sc = STATE_COLOR[k.st] || STATE_COLOR.neutro;
+          return (
+            <div key={k.label} className="card-sm" data-accent={sc.tint || undefined}>
+              <div className="kpi-label">{k.label}</div>
+              <div className="kpi-value" style={{ color: k.st === 'rojo' ? 'var(--red)' : undefined }}>{k.val}</div>
+              <span className="kpi-badge" style={{ background: sc.dim, color: sc.color, borderColor: 'transparent' }}>
+                {k.note || (k.st === 'lima' ? 'Saludable' : k.st === 'ambar' ? 'Atención' : k.st === 'rojo' ? 'Crítico' : 'COP')}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* NIVEL 2 · Calendario de pagos + Deudas */}
       <div className="grid-2" style={{ marginTop: 0 }}>
         <div className="card">
-          <div className="card-head"><span className="card-title">Calendario de pagos</span></div>
+          <div className="card-head">
+            <span className="card-title">Calendario de pagos</span>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '4px 10px', fontSize: 11 }} onClick={openAddPending}>＋ pendiente</button>
+          </div>
           <PendingCalendar pending={state.pending} onPay={markPaid} compact />
         </div>
 
         <div className="card">
           <div className="card-head">
             <span className="card-title">Deudas</span>
-            <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>Total {fmt(totalSaldo)} · con interés {fmt(interesOnly)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>Total {fmt(totalSaldo)} · con interés {fmt(interesOnly)}</span>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '4px 10px', fontSize: 11 }} onClick={openAddDebt}>＋ deuda</button>
+            </div>
           </div>
           {debts.map(d => {
             const pct = d.saldo_inicial > 0 ? Math.min(100, ((d.saldo_inicial - d.saldo) / d.saldo_inicial) * 100) : 0;
             const closed = d.saldo === 0;
+            const dSt = STATE_COLOR[stateDeuda(d.tasa_ea)];
+            const barColor = closed ? 'var(--text3)' : dSt.color;
             return (
               <div key={d.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', opacity: closed ? 0.55 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: d.tasa_ea > 0 ? 'var(--accent)' : 'var(--text3)', width: 18 }}>{closed ? '✓' : '#' + d.orden_ataque}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: closed ? 'var(--text3)' : dSt.color, width: 18 }}>{closed ? '✓' : '#' + d.orden_ataque}</span>
                   <span style={{ flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: closed ? 'line-through' : 'none' }}>{d.acreedor}</span>
-                  <span style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>{d.tasa_ea > 0 ? (d.tasa_ea * 100).toFixed(1) + '% EA' : 'sin interés'}</span>
+                  <span style={{ fontSize: 10, color: d.tasa_ea > 0 ? dSt.color : 'var(--text3)', fontFamily: 'var(--mono)' }}>{d.tasa_ea > 0 ? (d.tasa_ea * 100).toFixed(1) + '% EA' : 'sin interés'}</span>
                   <span style={{ fontSize: 12, fontFamily: 'var(--mono)', minWidth: 64, textAlign: 'right' }}>{closed ? '$0' : fmt(d.saldo)}</span>
                   {!closed && <button className="btn btn-ghost btn-sm" style={{ padding: '3px 10px', fontSize: 10 }} onClick={() => openDebtPay(d.id)}>＋ pago</button>}
                   <button className="btn btn-ghost btn-sm" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => openEditDebt(d.id)}>✎</button>
                 </div>
                 <div style={{ height: 3, background: 'var(--surface3)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: pct + '%', background: d.tasa_ea > 0 ? 'var(--accent)' : 'var(--text3)', transition: 'width .4s' }} />
+                  <div style={{ height: '100%', width: pct + '%', background: barColor, transition: 'width .4s' }} />
                 </div>
                 <div className="debt-meta-secondary" style={{ marginTop: 3, fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--mono)', display: 'flex', justifyContent: 'space-between' }}>
                   <span>cuota {fmt(d.cuota_actual)}/mes · {d.metodo_pago === 'manual' ? 'pago manual' : 'auto'}</span>
@@ -170,14 +184,14 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
             <span style={{ fontSize: 11, color: 'var(--accent)', fontFamily: 'var(--mono)' }}>{PHASE_LABELS[phase]}</span>
           </div>
           <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 14 }}>{PHASE_SUB[phase]}</div>
-          {[{ g: colchon, color: 'var(--accent)' }, { g: fondo, color: 'var(--text3)' }].map(({ g, color }) => g && (
+          {[colchon, fondo].map(g => g && (
             <div key={g.id} style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>
                 <span>{g.label}</span>
                 <span style={{ fontFamily: 'var(--mono)' }}>{fmt(g.actual)} / {fmt(g.meta)}</span>
               </div>
               <div style={{ height: 6, background: 'var(--surface3)', borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: Math.min(100, g.actual / g.meta * 100) + '%', background: color, transition: 'width .4s' }} />
+                <div style={{ height: '100%', width: Math.min(100, g.actual / g.meta * 100) + '%', background: STATE_COLOR[stateMeta(g.actual, g.meta)].color, transition: 'width .4s' }} />
               </div>
             </div>
           ))}
@@ -190,7 +204,10 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
         </div>
 
         <div className="card">
-          <div className="card-head"><span className="card-title">Últimos movimientos</span></div>
+          <div className="card-head">
+            <span className="card-title">Últimos movimientos</span>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '4px 10px', fontSize: 11 }} onClick={goToMovimientos}>Ver todos →</button>
+          </div>
           {recent.map(t => (
             <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
               <span style={{ fontSize: 14, width: 18, flexShrink: 0 }}>{catIcon(t.cat)}</span>

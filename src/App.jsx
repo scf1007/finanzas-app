@@ -33,7 +33,10 @@ export default function App() {
   const views = {
     dashboard: <Dashboard
       openDebtPay={id => setDebtPay({ open: true, debtId: id })}
-      openEditDebt={id => setDebtEdit({ open: true, debtId: id })} />,
+      openEditDebt={id => setDebtEdit({ open: true, debtId: id })}
+      openAddDebt={() => setDebtEdit({ open: true, debtId: null })}
+      openAddPending={() => setPendModal({ open: true, editing: null })}
+      goToMovimientos={() => setView('movimientos')} />,
     plan: <PlanAccion
       openDebtPay={id => setDebtPay({ open: true, debtId: id })} />,
     movimientos: <Movimientos

@@ -41,6 +41,67 @@ export const catIcon = n => CAT_MAP[n]?.icon || '•';
 export const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 export const MONTHS_SHORT = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
+// ── SISTEMA DE COLOR-ESTADO ──────────────────────────────────
+// Escala de salud: 'lima' (saludable), 'ambar' (atención), 'rojo' (crítico),
+// 'neutro' (sin estado). El color codifica urgencia, no categoría.
+export const STATE_COLOR = {
+  lima:   { color: 'var(--accent)', dim: 'var(--accent-dim)', tint: 'lime' },
+  ambar:  { color: 'var(--yellow)', dim: 'var(--yellow-dim)', tint: 'yellow' },
+  rojo:   { color: 'var(--red)',    dim: 'var(--red-dim)',    tint: 'red' },
+  neutro: { color: 'var(--text2)',  dim: 'var(--surface2)',   tint: null },
+};
+
+// Pago próximo 30d: rojo si hay vencidos, ámbar si hay pagos en 7 días, lima si holgado.
+export function statePagoProximo(pending) {
+  const active = (pending || []).filter(p => !p.paid);
+  const overdue = active.some(p => daysUntil(p.due) < 0);
+  if (overdue) return 'rojo';
+  const soon = active.some(p => { const d = daysUntil(p.due); return d >= 0 && d <= 7; });
+  if (soon) return 'ambar';
+  return active.length ? 'lima' : 'neutro';
+}
+
+// Saldo total vs obligaciones de los próximos 30 días.
+export function stateSaldo(totalBal, pending) {
+  const due30 = (pending || [])
+    .filter(p => !p.paid && daysUntil(p.due) <= 30)
+    .reduce((s, p) => s + p.amt, 0);
+  if (due30 === 0) return 'neutro';
+  if (totalBal < due30) return 'rojo';
+  if (totalBal < due30 * 1.2) return 'ambar';   // cubre, pero con <20% de margen
+  return 'lima';
+}
+
+// Gasto del período vs ingreso del período. Ingreso 0 → neutro (no penaliza).
+export function stateGasto(periodExp, periodInc) {
+  if (periodInc === 0) return 'neutro';
+  const ratio = periodExp / periodInc;
+  if (ratio > 1) return 'rojo';      // gastas más de lo que entra
+  if (ratio >= 0.8) return 'ambar';  // queda poco margen
+  return 'lima';                     // generas excedente
+}
+
+// Ingresos: lima si hay, neutro si cero.
+export function stateIngreso(periodInc) {
+  return periodInc > 0 ? 'lima' : 'neutro';
+}
+
+// Meta por progreso: <20% rojo, 20-80% ámbar, ≥80% lima.
+export function stateMeta(actual, meta) {
+  if (!meta || meta <= 0) return 'neutro';
+  const pct = actual / meta;
+  if (pct < 0.2) return 'rojo';
+  if (pct < 0.8) return 'ambar';
+  return 'lima';
+}
+
+// Deuda por tasa de interés (calor = costo). ≥25% rojo, ≥10% ámbar, <10%/0 lima.
+export function stateDeuda(tasaEa) {
+  if (tasaEa >= 0.25) return 'rojo';
+  if (tasaEa >= 0.10) return 'ambar';
+  return 'lima';
+}
+
 // ── Fases y reparto ──────────────────────────────────────────
 export function computePhase(state) {
   const o = state?.phase?.overrides;
