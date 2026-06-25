@@ -173,7 +173,11 @@ nav:not(:hover) .nav-header { opacity: 0; }
 }
 .nav-item:hover { background: var(--surface2); color: var(--text); }
 .nav-item:active { transform: scale(0.98); }
-.nav-item.active { background: var(--accent-dim); color: var(--accent); }
+.nav-item.active { color: var(--accent); }
+/* Colapsado: el activo se marca solo por color de ícono (sin caja). */
+/* Expandido: aparece el fondo tipo item de lista. */
+nav:hover .nav-item.active { background: var(--accent-dim); }
+.nav-item.active .icon { filter: drop-shadow(0 0 6px var(--accent-glow)); }
 .nav-item .icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
 /* Las etiquetas se ocultan cuando está colapsado */
 .nav-item .nav-label { opacity: 0; transition: opacity .2s; }
@@ -249,7 +253,7 @@ main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: var(-
 main::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
 /* ── VIEWS ── */
-.view { display: none; padding: 32px 36px; max-width: 1200px; }
+.view { display: none; padding: 32px 40px; max-width: 1600px; margin: 0 auto; width: 100%; }
 .view.active { display: block; }
 .view-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.025em; }
 .view-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
