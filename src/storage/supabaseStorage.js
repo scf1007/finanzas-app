@@ -85,6 +85,7 @@ export async function loadState(userId) {
     },
     allocation_rules: Object.keys(rules).length ? rules : null,
     _profileExists: !!pr.data,
+    _themePref: pr.data?.settings?.theme || null,
   };
 }
 
@@ -128,6 +129,12 @@ export const Storage = {
   async saveBudget(budget) {
     const { data } = await supabase.from('profiles').select('settings').eq('id', this.userId).maybeSingle();
     const settings = { ...(data?.settings || {}), budget };
+    await this.saveProfile({ settings });
+  },
+  async saveThemePref(theme) {
+    if (!this.userId) return;
+    const { data } = await supabase.from('profiles').select('settings').eq('id', this.userId).maybeSingle();
+    const settings = { ...(data?.settings || {}), theme };
     await this.saveProfile({ settings });
   },
   async upsertAllocationRules(rules) {

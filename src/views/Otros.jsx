@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../state/StoreContext';
-import { Modal, Field, useChart } from '../components/shared';
+import { Modal, Field, useChart, cssVar } from '../components/shared';
 import { fmt, fmtFull, expSum, expenses, catColor, catIcon, MONTHS, uid } from '../logic';
 
 // ═══════════════ PRESUPUESTO ═══════════════
@@ -123,8 +123,8 @@ export function Insights() {
       options: {
         responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmtFull(c.raw) } } },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#52525b', font: { size: 10 } }, border: { display: false } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#52525b', font: { size: 10 }, callback: v => fmt(v) }, border: { display: false } },
+          x: { grid: { display: false }, ticks: { color: cssVar('--chart-tick', '#52525b'), font: { size: 10 } }, border: { display: false } },
+          y: { grid: { color: cssVar('--chart-grid', 'rgba(255,255,255,0.04)') }, ticks: { color: cssVar('--chart-tick', '#52525b'), font: { size: 10 }, callback: v => fmt(v) }, border: { display: false } },
         },
       },
     };
@@ -306,7 +306,7 @@ export function Cuentas() {
   const chartRef = useChart(() => ({
     type: 'doughnut',
     data: { labels: state.accounts.map(a => a.name), datasets: [{ data: state.accounts.map(a => a.balance), backgroundColor: state.accounts.map(a => a.color), borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { labels: { color: '#71717a', font: { size: 12 }, boxWidth: 10 } }, tooltip: { callbacks: { label: c => ' ' + fmtFull(c.raw) } } } },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { labels: { color: cssVar('--chart-tick', '#71717a'), font: { size: 12 }, boxWidth: 10 } }, tooltip: { callbacks: { label: c => ' ' + fmtFull(c.raw) } } } },
   }), [state.accounts]);
 
   return (

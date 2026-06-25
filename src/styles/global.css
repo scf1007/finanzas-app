@@ -48,6 +48,47 @@
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
   --shadow-lg: 0 16px 48px rgba(0,0,0,0.45);
+
+  /* Chart helpers (leídas por Chart.js en runtime) */
+  --chart-grid: rgba(255,255,255,0.04);
+  --chart-tick: #6a6a72;
+}
+
+/* ── LIGHT THEME ── */
+/* No es una inversión: es vidrio iluminado por luz externa en vez de */
+/* emanando de la oscuridad. Más sobrio, igual de intencional. */
+[data-theme="light"] {
+  --bg: #f4f4f6;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface2: rgba(20, 20, 30, 0.04);
+  --surface3: rgba(20, 20, 30, 0.07);
+
+  --border: rgba(20, 20, 40, 0.08);
+  --border2: rgba(20, 20, 40, 0.13);
+  --border-strong: rgba(20, 20, 40, 0.20);
+
+  --glass-hl: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  --text: #16161a;
+  --text2: #54545c;
+  --text3: #8a8a93;
+
+  /* La lima necesita un tono ligeramente más profundo para contraste sobre claro */
+  --accent: #6db300;
+  --accent-dim: rgba(109, 179, 0, 0.13);
+  --accent-glow: rgba(109, 179, 0, 0.22);
+
+  --red: #e23b3b;     --red-dim: rgba(226, 59, 59, 0.10);
+  --green: #1ba85a;   --green-dim: rgba(27, 168, 90, 0.10);
+  --yellow: #c8920a;  --yellow-dim: rgba(200, 146, 10, 0.12);
+  --purple: #7c5cff;  --purple-dim: rgba(124, 92, 255, 0.10);
+  --blue: #2b7fde;    --blue-dim: rgba(43, 127, 222, 0.10);
+
+  --shadow-sm: 0 1px 3px rgba(20,20,40,0.08);
+  --shadow-lg: 0 16px 48px rgba(20,20,40,0.14);
+
+  --chart-grid: rgba(20,20,40,0.07);
+  --chart-tick: #8a8a93;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -56,8 +97,8 @@ html, body { height: 100%; overflow: hidden; }
 body {
   /* Ambient gradient gives backdrop-filter something to refract */
   background:
-    radial-gradient(ellipse 80% 50% at 30% -10%, rgba(168,255,71,0.045), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(179,157,255,0.04), transparent 60%),
+    radial-gradient(ellipse 80% 50% at 30% -10%, var(--amb1, rgba(168,255,71,0.045)), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, var(--amb2, rgba(179,157,255,0.04)), transparent 60%),
     var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -67,42 +108,101 @@ body {
   text-rendering: optimizeLegibility;
   letter-spacing: -0.003em;
 }
+[data-theme="light"] {
+  --amb1: rgba(109,179,0,0.06);
+  --amb2: rgba(124,92,255,0.05);
+}
 
-/* ── NAV (sidebar, liquid glass) ── */
+/* ── NAV (sidebar estilo referente: fundido al fondo, hover-expand) ── */
+:root { --nav-collapsed: 72px; }
+
 nav {
-  width: var(--nav-w);
+  width: var(--nav-collapsed);
   flex-shrink: 0;
-  background: var(--surface);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  backdrop-filter: blur(40px) saturate(180%);
-  border-right: 1px solid var(--border);
+  background: transparent;          /* fundido al fondo, sin caja */
+  border-right: none;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
-  box-shadow: var(--glass-hl);
-  transition: transform .35s cubic-bezier(.4,0,.2,1);
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  transition: width .32s cubic-bezier(.4,0,.2,1), margin-right .32s cubic-bezier(.4,0,.2,1);
 }
-.nav-header { padding: 22px 20px 16px; border-bottom: 1px solid var(--border); }
+/* En hover el nav crece visualmente pero su footprint queda igual */
+/* (margin-right negativo) para que el contenido no se desplace. */
+nav:hover {
+  width: var(--nav-w);
+  margin-right: calc(-1 * (var(--nav-w) - var(--nav-collapsed)));
+}
+/* Panel de vidrio que aparece SOLO al expandir */
+nav::before {
+  content: '';
+  position: absolute; inset: 8px 8px 8px 8px;
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg), var(--glass-hl);
+  opacity: 0;
+  transition: opacity .32s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+  z-index: -1;
+}
+nav:hover {
+  width: var(--nav-w);
+}
+nav:hover::before { opacity: 1; }
+
+.nav-header { padding: 22px 18px 16px; overflow: hidden; white-space: nowrap; }
 .nav-logo { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
 .nav-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.nav-items { flex: 1; padding: 10px 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+/* Logo y sub se ocultan cuando está colapsado */
+nav:not(:hover) .nav-header { opacity: 0; }
+.nav-header { transition: opacity .22s; }
+
+.nav-items { flex: 1; padding: 10px 14px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 3px; }
 .nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 12px; border-radius: var(--r-sm);
+  display: flex; align-items: center; gap: 13px;
+  padding: 10px; border-radius: var(--r-sm);
   cursor: pointer; transition: background .2s, color .2s, transform .12s;
   color: var(--text2); font-size: 13px; font-weight: 500;
   border: none; background: none; width: 100%; text-align: left;
-  font-family: inherit;
+  font-family: inherit; white-space: nowrap; overflow: hidden;
 }
 .nav-item:hover { background: var(--surface2); color: var(--text); }
 .nav-item:active { transform: scale(0.98); }
-.nav-item.active { background: var(--accent-dim); color: var(--accent); box-shadow: var(--glass-hl); }
-.nav-item .icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
-.nav-section { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding: 14px 12px 6px; margin-top: 4px; }
-.nav-footer { padding: 16px 18px; border-top: 1px solid var(--border); }
+.nav-item.active { background: var(--accent-dim); color: var(--accent); }
+.nav-item .icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+/* Las etiquetas se ocultan cuando está colapsado */
+.nav-item .nav-label { opacity: 0; transition: opacity .2s; }
+nav:hover .nav-item .nav-label { opacity: 1; }
+
+.nav-section { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding: 14px 10px 6px; margin-top: 4px; white-space: nowrap; overflow: hidden; opacity: 0; transition: opacity .2s; }
+nav:hover .nav-section { opacity: 1; }
+/* Cuando está colapsado, las secciones se vuelven un separador sutil */
+nav:not(:hover) .nav-section { padding: 8px 10px 2px; height: 1px; }
+
+.nav-footer { padding: 14px 18px; overflow: hidden; white-space: nowrap; opacity: 0; transition: opacity .22s; }
+nav:hover .nav-footer { opacity: 1; }
 .nav-account { font-size: 11px; color: var(--text3); line-height: 1.6; }
 .nav-balance { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--text); margin-top: 2px; letter-spacing: -0.025em; }
+
+/* Toggle de tema, abajo a la izquierda */
+.theme-toggle {
+  display: flex; align-items: center; gap: 13px;
+  padding: 10px; margin: 4px 14px 14px;
+  border-radius: var(--r-sm);
+  cursor: pointer; border: none; background: none;
+  color: var(--text2); font-size: 13px; font-weight: 500;
+  font-family: inherit; white-space: nowrap; overflow: hidden;
+  transition: background .2s, color .2s;
+}
+.theme-toggle:hover { background: var(--surface2); color: var(--text); }
+.theme-toggle .icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+.theme-toggle .nav-label { opacity: 0; transition: opacity .2s; }
+nav:hover .theme-toggle .nav-label { opacity: 1; }
 
 /* ── MOBILE TOPBAR (hidden on desktop) ── */
 .mobile-topbar {
@@ -378,10 +478,19 @@ tr:hover td { background: rgba(255,255,255,0.025); }
 
   nav {
     position: fixed; top: 0; left: 0; z-index: 60;
+    width: var(--nav-w);
     transform: translateX(-100%);
+    margin-right: 0;
     box-shadow: var(--shadow-lg);
+    transition: transform .32s cubic-bezier(.4,0,.2,1);
   }
+  nav:hover { width: var(--nav-w); margin-right: 0; }   /* sin colapso en móvil */
   nav.open { transform: translateX(0); }
+  /* En móvil el panel de vidrio siempre visible y a borde completo */
+  nav::before { inset: 0; opacity: 1; border-radius: 0; border: none; border-right: 1px solid var(--border); }
+  nav .nav-header, nav .nav-footer, nav .nav-section { opacity: 1; }
+  nav .nav-item .nav-label, nav .theme-toggle .nav-label { opacity: 1; }
+  nav:not(:hover) .nav-section { padding: 14px 10px 6px; height: auto; }
   .mobile-topbar { display: flex; }
   main { height: auto; min-height: calc(100vh - var(--topbar-h)); }
 

@@ -5,6 +5,7 @@ import { TxModal, PendingModal, DebtPayModal, DebtEditModal } from './components
 import { ImportStatementModal } from './components/ImportStatementModal';
 import { Login, ImportJson } from './onboarding';
 import Dashboard from './views/Dashboard';
+import PlanAccion from './views/PlanAccion';
 import Movimientos from './views/Movimientos';
 import Pendientes from './views/Pendientes';
 import { Presupuesto, Insights, Cuentas } from './views/Otros';
@@ -33,6 +34,8 @@ export default function App() {
     dashboard: <Dashboard
       openDebtPay={id => setDebtPay({ open: true, debtId: id })}
       openEditDebt={id => setDebtEdit({ open: true, debtId: id })} />,
+    plan: <PlanAccion
+      openDebtPay={id => setDebtPay({ open: true, debtId: id })} />,
     movimientos: <Movimientos
       onEdit={t => setTxModal({ open: true, editing: t })}
       onAdd={() => setTxModal({ open: true, editing: null })}

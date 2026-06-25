@@ -1,21 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../state/StoreContext';
-import { useChart } from '../components/shared';
+import { useChart, cssVar } from '../components/shared';
 import { PendingCalendar } from '../components/PendingCalendar';
 import {
   fmt, fmtFull, daysUntil, expSum, expenses, catColor, catIcon,
-  computeNextActions, computePhase, PHASE_LABELS, PHASE_SUB, MONTHS, MONTHS_SHORT,
+  computePhase, PHASE_LABELS, PHASE_SUB, MONTHS, MONTHS_SHORT,
 } from '../logic';
 
-const TONE = {
-  critical: { border: 'rgba(255,107,107,0.35)', bg: 'var(--red-dim)' },
-  warn: { border: 'rgba(255,206,92,0.3)', bg: 'var(--yellow-dim)' },
-  info: { border: 'var(--border)', bg: 'var(--surface2)' },
-  ok: { border: 'rgba(168,255,71,0.3)', bg: 'var(--accent-dim)' },
-};
-
 export default function Dashboard({ openDebtPay, openEditDebt }) {
-  const { state, markPaid, ackDebtClosed } = useStore();
+  const { state, markPaid, theme } = useStore();
   const [mode, setMode] = useState('year');
   const [year, setYear] = useState('2026');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -27,7 +20,6 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
   }, [state.txs, mode, year, month]);
 
   const periodLabel = mode === 'year' ? `Año ${year}` : `${MONTHS[month]} ${year}`;
-  const actions = useMemo(() => computeNextActions(state), [state]);
   const phase = computePhase(state);
 
   const periodExp = expSum(periodTxs);
@@ -72,14 +64,14 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
       type: 'bar', data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: chartMode === 'both', labels: { color: '#71717a', font: { size: 11 }, boxWidth: 10 } }, tooltip: { callbacks: { label: c => ' ' + fmtFull(c.raw) } } },
+        plugins: { legend: { display: chartMode === 'both', labels: { color: cssVar('--chart-tick', '#71717a'), font: { size: 11 }, boxWidth: 10 } }, tooltip: { callbacks: { label: c => ' ' + fmtFull(c.raw) } } },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#52525b', font: { size: 11 } }, border: { display: false } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#52525b', font: { size: 10 }, callback: v => fmt(v) }, border: { display: false } },
+          x: { grid: { display: false }, ticks: { color: cssVar('--chart-tick', '#52525b'), font: { size: 11 } }, border: { display: false } },
+          y: { grid: { color: cssVar('--chart-grid', 'rgba(255,255,255,0.04)') }, ticks: { color: cssVar('--chart-tick', '#52525b'), font: { size: 10 }, callback: v => fmt(v) }, border: { display: false } },
         },
       },
     };
-  }, [periodTxs, mode, chartMode, year, month]);
+  }, [periodTxs, mode, chartMode, year, month, theme]);
 
   // ── Dona ──
   const catTotals = {};
@@ -90,16 +82,9 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
     type: 'doughnut',
     data: { labels: sorted.map(e => e[0]), datasets: [{ data: sorted.map(e => e[1]), backgroundColor: sorted.map(e => catColor(e[0])), borderWidth: 0, hoverOffset: 5 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmt(c.raw) + ' · ' + (c.raw / donutTotal * 100).toFixed(1) + '%' } } } },
-  }), [periodTxs]);
-
-  const handleCta = cta => {
-    if (cta.kind === 'markPaid') markPaid(cta.id);
-    if (cta.kind === 'debtPay') openDebtPay(cta.id);
-    if (cta.kind === 'ackClosed') ackDebtClosed(cta.id);
-  };
+  }), [periodTxs, theme]);
 
   const recent = periodTxs.filter(t => t.amt < 0 && !['Transferencias', 'Ingresos'].includes(t.cat)).slice(0, 8);
-  const urgent = actions.filter(a => a.tone === 'critical').length;
 
   return (
     <div className="view active">
@@ -123,33 +108,7 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
         </div>
       </div>
 
-      {/* Plan de acción */}
-      <div className="card" style={{ marginBottom: 18 }}>
-        <div className="card-head">
-          <span className="card-title">Plan de acción</span>
-          <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
-            {actions.length === 0 ? 'al día' : urgent > 0 ? `${urgent} urgente${urgent === 1 ? '' : 's'} · ${actions.length} total` : `${actions.length} paso${actions.length === 1 ? '' : 's'}`}
-          </span>
-        </div>
-        {actions.length === 0
-          ? <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', color: 'var(--text2)', fontSize: 13 }}><span style={{ fontSize: 16 }}>✅</span> Nada urgente. Tu siguiente movimiento es sostener el plan de fase.</div>
-          : actions.map((a, i) => {
-            const st = TONE[a.tone] || TONE.info;
-            return (
-              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 14px', background: st.bg, border: `1px solid ${st.border}`, borderRadius: 'var(--r-sm)', marginBottom: 8 }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--text3)', marginTop: 3, minWidth: 14 }}>{i + 1}</span>
-                <span style={{ fontSize: 15, flexShrink: 0, marginTop: -1 }}>{a.icon}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{a.title}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2, lineHeight: 1.5 }}>{a.detail}</div>
-                </div>
-                {a.cta && <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }} onClick={() => handleCta(a.cta)}>{a.cta.label}</button>}
-              </div>
-            );
-          })}
-      </div>
-
-      {/* KPIs */}
+      {/* NIVEL 1 · KPIs */}
       <div className="grid-4">
         {[
           { label: `Gasto · ${periodLabel}`, val: fmt(periodExp), badge: 'badge-info', btxt: 'COP' },
@@ -165,8 +124,13 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
         ))}
       </div>
 
-      {/* Deudas + Plan & Fase */}
+      {/* NIVEL 2 · Calendario de pagos + Deudas */}
       <div className="grid-2" style={{ marginTop: 0 }}>
+        <div className="card">
+          <div className="card-head"><span className="card-title">Calendario de pagos</span></div>
+          <PendingCalendar pending={state.pending} onPay={markPaid} compact />
+        </div>
+
         <div className="card">
           <div className="card-head">
             <span className="card-title">Deudas</span>
@@ -196,7 +160,10 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
             );
           })}
         </div>
+      </div>
 
+      {/* NIVEL 3 · Plan & Fase + Últimos movimientos */}
+      <div className="grid-2">
         <div className="card">
           <div className="card-head">
             <span className="card-title">Plan &amp; Fase</span>
@@ -221,10 +188,22 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
                   : 'Próximo hito: fondo de emergencia completo'}
           </div>
         </div>
+
+        <div className="card">
+          <div className="card-head"><span className="card-title">Últimos movimientos</span></div>
+          {recent.map(t => (
+            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 14, width: 18, flexShrink: 0 }}>{catIcon(t.cat)}</span>
+              <span style={{ flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.desc}</span>
+              <span style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{t.d.slice(5).replace('-', '/')}</span>
+              <span style={{ fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--red)', flexShrink: 0 }}>{fmtFull(t.amt)}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Gráficas */}
-      <div className="grid-3">
+      {/* NIVEL 4 · Gasto mensual + Categorías */}
+      <div className="grid-2">
         <div className="card">
           <div className="card-head">
             <span className="card-title">Gasto mensual</span>
@@ -259,25 +238,6 @@ export default function Dashboard({ openDebtPay, openEditDebt }) {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Próximos + Recientes */}
-      <div className="grid-2">
-        <div className="card">
-          <div className="card-head"><span className="card-title">Calendario de pagos</span></div>
-          <PendingCalendar pending={state.pending} onPay={markPaid} compact />
-        </div>
-        <div className="card">
-          <div className="card-head"><span className="card-title">Últimos movimientos</span></div>
-          {recent.map(t => (
-            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 14, width: 18, flexShrink: 0 }}>{catIcon(t.cat)}</span>
-              <span style={{ flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.desc}</span>
-              <span style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{t.d.slice(5).replace('-', '/')}</span>
-              <span style={{ fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--red)', flexShrink: 0 }}>{fmtFull(t.amt)}</span>
-            </div>
-          ))}
         </div>
       </div>
     </div>

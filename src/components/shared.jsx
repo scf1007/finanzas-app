@@ -18,6 +18,12 @@ export function Modal({ open, onClose, title, children, footer, maxWidth = 480 }
 }
 
 // ── Chart.js como hook ───────────────────────────────────────
+// Lee una variable CSS del documento (para que Chart.js respete el tema)
+export function cssVar(name, fallback = '') {
+  if (typeof document === 'undefined') return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
 export function useChart(configFactory, deps) {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -39,6 +45,7 @@ export const Row = ({ children }) => <div className="form-row">{children}</div>;
 const NAV = [
   { section: 'Overview' },
   { id: 'dashboard', icon: '◈', label: 'Dashboard' },
+  { id: 'plan', icon: '◎', label: 'Plan de acción' },
   { id: 'movimientos', icon: '↕', label: 'Movimientos' },
   { section: 'Gestión' },
   { id: 'pendientes', icon: '⏱', label: 'Pendientes' },
@@ -49,7 +56,7 @@ const NAV = [
 ];
 
 export function Layout({ view, setView, onAddTx, children }) {
-  const { state, signOut, toast } = useStore();
+  const { state, signOut, toast, theme, toggleTheme } = useStore();
   const [navOpen, setNavOpen] = useState(false);
   const totalBal = (state?.accounts || []).reduce((s, a) => s + a.balance, 0);
   const overdueCount = (state?.pending || []).filter(p => !p.paid && new Date(p.due) < new Date(new Date().toISOString().slice(0, 10))).length;
@@ -62,6 +69,7 @@ export function Layout({ view, setView, onAddTx, children }) {
         <button className="mt-hamb" onClick={() => setNavOpen(v => !v)} aria-label="Menú">☰</button>
         <span className="mt-logo">SCF · Finanzas</span>
         <div className="mt-actions">
+          <button onClick={toggleTheme} title="Cambiar tema" style={{ marginRight: 4 }}>{theme === 'dark' ? '☀' : '☾'}</button>
           <button onClick={signOut} title="Cerrar sesión">⎋</button>
         </div>
       </div>
@@ -78,12 +86,13 @@ export function Layout({ view, setView, onAddTx, children }) {
         </div>
         <div className="nav-items">
           {NAV.map((item, i) => item.section
-            ? <div key={i} className="nav-section">{item.section}</div>
+            ? <div key={i} className="nav-section"><span className="nav-label">{item.section}</span></div>
             : (
-              <button key={item.id} className={'nav-item' + (view === item.id ? ' active' : '')} onClick={() => go(item.id)}>
-                <span className="icon">{item.icon}</span> {item.label}
+              <button key={item.id} className={'nav-item' + (view === item.id ? ' active' : '')} onClick={() => go(item.id)} title={item.label}>
+                <span className="icon">{item.icon}</span>
+                <span className="nav-label">{item.label}</span>
                 {item.id === 'pendientes' && overdueCount > 0 &&
-                  <span style={{ marginLeft: 'auto', background: 'var(--accent)', color: '#000', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 10 }}>{overdueCount}</span>}
+                  <span className="nav-label" style={{ marginLeft: 'auto', background: 'var(--accent)', color: '#000', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 10 }}>{overdueCount}</span>}
               </button>
             ))}
         </div>
@@ -91,6 +100,10 @@ export function Layout({ view, setView, onAddTx, children }) {
           <div className="nav-account">Saldo actual estimado</div>
           <div className="nav-balance">{fmt(totalBal)}</div>
         </div>
+        <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Modo día' : 'Modo noche'}>
+          <span className="icon">{theme === 'dark' ? '☀' : '☾'}</span>
+          <span className="nav-label">{theme === 'dark' ? 'Modo día' : 'Modo noche'}</span>
+        </button>
       </nav>
 
       <main>{children}</main>

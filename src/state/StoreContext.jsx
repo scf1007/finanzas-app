@@ -11,7 +11,26 @@ export function StoreProvider({ children }) {
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
+  const [theme, setTheme] = useState(() => {
+    if (typeof document === 'undefined') return 'dark';
+    return localStorage.getItem('scf-theme') || 'dark';
+  });
   const toastTimer = useRef(null);
+
+  // Aplica el tema al documento y lo recuerda localmente al instante
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('scf-theme', theme); } catch { /* ignore */ }
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      // Persistir en el perfil de Supabase (multidispositivo)
+      Storage.saveThemePref?.(next).catch(() => {});
+      return next;
+    });
+  }, []);
 
   const notify = useCallback(msg => {
     setToast(msg);
@@ -30,6 +49,10 @@ export function StoreProvider({ children }) {
     if (!session?.user) return;
     const s = await loadState(session.user.id);
     setState(s);
+    // Si el perfil tiene un tema guardado, respétalo (multidispositivo)
+    if (s?._themePref && (s._themePref === 'dark' || s._themePref === 'light')) {
+      setTheme(s._themePref);
+    }
     return s;
   }, [session]);
 
@@ -46,6 +69,7 @@ export function StoreProvider({ children }) {
   // ── Acciones (mutación local optimista + escritura remota) ──
   const api = {
     session, state, loading, toast, notify, refresh,
+    theme, toggleTheme,
 
     signIn: () => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }),
     signOut: () => supabase.auth.signOut(),
