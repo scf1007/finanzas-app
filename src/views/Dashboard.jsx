@@ -8,8 +8,8 @@ import {
   STATE_COLOR, statePagoProximo, stateSaldo, stateGasto, stateIngreso, stateMeta, stateDeuda,
 } from '../logic';
 
-export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, openAddPending, goToMovimientos }) {
-  const { state, markPaid, theme } = useStore();
+export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, openAddPending, onPayPending, goToMovimientos }) {
+  const { state, theme } = useStore();
   const [mode, setMode] = useState('year');
   const [year, setYear] = useState('2026');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -137,7 +137,7 @@ export default function Dashboard({ openDebtPay, openEditDebt, openAddDebt, open
             <span className="card-title">Calendario de pagos</span>
             <button className="btn btn-ghost btn-sm" style={{ padding: '4px 10px', fontSize: 11 }} onClick={openAddPending}>＋ pendiente</button>
           </div>
-          <PendingCalendar pending={state.pending} onPay={markPaid} compact />
+          <PendingCalendar pending={state.pending} onPay={onPayPending} compact />
         </div>
 
         <div className="card" data-tone="red">

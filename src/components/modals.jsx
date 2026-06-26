@@ -60,20 +60,22 @@ export function TxModal({ open, onClose, editing }) {
 
 // ── Pendiente (crear/editar) ─────────────────────────────────
 export function PendingModal({ open, onClose, editing }) {
-  const { savePending } = useStore();
+  const { state, savePending } = useStore();
   const [f, setF] = useState({});
   useEffect(() => {
     if (!open) return;
     const def = new Date(); def.setDate(def.getDate() + 30);
-    setF(editing ? { ...editing } : { name: '', amt: '', due: def.toISOString().slice(0, 10), cat: 'Utilities', recur: 'monthly', icon: '' });
+    setF(editing ? { ...editing } : { name: '', amt: '', due: def.toISOString().slice(0, 10), cat: 'Utilities', recur: 'monthly', icon: '', debt_id: null });
   }, [open, editing]);
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
   const save = () => {
     if (!f.name?.trim() || !+f.amt || !f.due) return alert('Completá todos los campos');
-    savePending({ ...f, id: editing?.id || uid(), name: f.name.trim(), amt: +f.amt, icon: f.icon || '📋', paid: editing?.paid || false });
+    savePending({ ...f, id: editing?.id || uid(), name: f.name.trim(), amt: +f.amt, icon: f.icon || '📋', paid: editing?.paid || false, debt_id: f.debt_id || null });
     onClose();
   };
+
+  const activeDebts = (state?.debts || []).filter(d => d.saldo > 0);
 
   return (
     <Modal open={open} onClose={onClose} title={editing ? 'Editar pendiente' : 'Agregar pendiente'}
@@ -100,6 +102,17 @@ export function PendingModal({ open, onClose, editing }) {
         </Field>
       </Row>
       <Field label="Emoji / Ícono"><input className="form-input" value={f.icon || ''} onChange={e => set('icon', e.target.value)} placeholder="🏠" maxLength={2} /></Field>
+      {activeDebts.length > 0 && (
+        <Field label="¿Este recibo incluye la cuota de una deuda? (opcional)">
+          <select className="form-input" value={f.debt_id || ''} onChange={e => set('debt_id', e.target.value || null)}>
+            <option value="">No, es un gasto normal</option>
+            {activeDebts.map(d => <option key={d.id} value={d.id}>Sí, abona a: {d.acreedor}</option>)}
+          </select>
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6, lineHeight: 1.5 }}>
+            Para recibos dobles, como Codensa, que cobran servicios y la cuota de la tarjeta juntos. Al pagar, indicarás cuánto fue la cuota.
+          </div>
+        </Field>
+      )}
     </Modal>
   );
 }
@@ -230,6 +243,92 @@ export function DebtEditModal({ open, onClose, debtId }) {
           ? 'La nueva deuda entra al final del orden de ataque; puedes reordenar después. La tasa EA define su urgencia (color).'
           : 'Útil cuando cambia la cuota (ej: subir el abono a tu abuela al liberar otra deuda) o para corregir el saldo tras un extracto.'}
       </div>
+    </Modal>
+  );
+}
+
+// ── Confirmar pago de un pendiente ───────────────────────────
+// Ventana de confirmación de monto. Si el pendiente está vinculado a una deuda
+// (recibo doble, ej. Codensa), permite indicar cuánto del total fue abono a la
+// deuda; ese monto baja el saldo de la deuda y el resto queda como gasto.
+export function PendingPayModal({ open, onClose, pending }) {
+  const { state, payPending } = useStore();
+  const [amt, setAmt] = useState('');
+  const [abono, setAbono] = useState('');
+  const [fecha, setFecha] = useState(today());
+
+  const linkedDebt = pending?.debt_id ? state.debts.find(d => d.id === pending.debt_id) : null;
+
+  useEffect(() => {
+    if (!open || !pending) return;
+    setAmt(pending.amt);
+    setFecha(today());
+    // Por defecto, sugerimos la cuota de la deuda si existe, acotada al saldo y al total
+    if (linkedDebt) {
+      const sugerido = Math.min(linkedDebt.cuota_actual || 0, linkedDebt.saldo, pending.amt);
+      setAbono(sugerido > 0 ? sugerido : '');
+    } else {
+      setAbono('');
+    }
+  }, [open, pending]);
+
+  if (!pending) return null;
+
+  const total = +amt || 0;
+  const abonoNum = linkedDebt ? Math.min(+abono || 0, linkedDebt.saldo) : 0;
+  const gastoServicios = Math.max(0, total - abonoNum);
+  const saldoNuevo = linkedDebt ? Math.max(0, linkedDebt.saldo - abonoNum) : 0;
+  const abonoInvalido = linkedDebt && abonoNum > total;
+
+  return (
+    <Modal open={open} onClose={onClose} title="Confirmar pago" maxWidth={460}
+      footer={<>
+        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn btn-primary" onClick={() => {
+          if (!total) return alert('Monto inválido');
+          if (abonoInvalido) return alert('El abono no puede superar el monto total');
+          payPending(pending.id, { total, abono: abonoNum, fecha });
+          onClose();
+        }}>Confirmar pago</button>
+      </>}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+        <span style={{ fontSize: 20 }}>{pending.icon || '📋'}</span>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 500 }}>{pending.name}</div>
+          <div style={{ fontSize: 12, color: 'var(--text3)' }}>{pending.cat}</div>
+        </div>
+      </div>
+
+      <Row>
+        <Field label="Monto total pagado"><input className="form-input" type="number" value={amt} onChange={e => setAmt(e.target.value)} /></Field>
+        <Field label="Fecha"><input className="form-input" type="date" value={fecha} onChange={e => setFecha(e.target.value)} /></Field>
+      </Row>
+
+      {linkedDebt && (
+        <>
+          <Field label={`¿Cuánto de este pago fue cuota de ${linkedDebt.acreedor}?`}>
+            <input className="form-input" type="number" value={abono} onChange={e => setAbono(e.target.value)} placeholder="0" />
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6, lineHeight: 1.5 }}>
+              El resto se registra como gasto de servicios. La cuota varía cada mes; revisá tu recibo.
+            </div>
+          </Field>
+          <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '14px 16px', fontSize: 12, lineHeight: 1.9 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text3)' }}>Abono a la deuda</span>
+              <span style={{ fontFamily: 'var(--mono)', color: 'var(--accent)' }}>{fmtFull(abonoNum)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text3)' }}>Gasto de servicios</span>
+              <span style={{ fontFamily: 'var(--mono)' }}>{fmtFull(gastoServicios)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, marginTop: 4, borderTop: '1px solid var(--border)' }}>
+              <span style={{ color: 'var(--text3)' }}>Saldo {linkedDebt.acreedor}</span>
+              <span style={{ fontFamily: 'var(--mono)' }}>{fmtFull(linkedDebt.saldo)} → <span style={{ color: 'var(--accent)' }}>{fmtFull(saldoNuevo)}</span>{saldoNuevo === 0 && abonoNum > 0 ? ' 🎉' : ''}</span>
+            </div>
+          </div>
+          {abonoInvalido && <div style={{ color: 'var(--red)', fontSize: 11, marginTop: 8 }}>El abono no puede superar el monto total.</div>}
+        </>
+      )}
     </Modal>
   );
 }

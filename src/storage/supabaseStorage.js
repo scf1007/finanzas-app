@@ -25,11 +25,13 @@ const pendFromRow = r => ({
   id: r.id, name: r.name, amt: Number(r.amount), due: r.due_date,
   cat: r.category, icon: r.icon, recur: r.recur, paid: r.paid,
   provider_key: r.provider_key || undefined,
+  debt_id: r.debt_id || null,
 });
 const pendToRow = (p, uid) => ({
   id: p.id, user_id: uid, name: p.name, amount: Math.round(p.amt), due_date: p.due,
   category: p.cat ?? null, icon: p.icon ?? null, recur: p.recur || 'none',
   paid: !!p.paid, provider_key: p.provider_key ?? null,
+  debt_id: p.debt_id ?? null,
 });
 
 const debtFromRow = r => ({

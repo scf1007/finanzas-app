@@ -112,6 +112,45 @@ export function StoreProvider({ children }) {
       await Storage.upsertPending(paid); await Storage.upsertTx(tx);
       notify('✓ pagado');
     },
+    // Pago confirmado de un pendiente, con monto total y abono opcional a deuda.
+    // Si el pendiente abona a una deuda (recibo doble), baja el saldo de la deuda
+    // por 'abono' y registra el resto como gasto de servicios.
+    async payPending(id, { total, abono = 0, fecha }) {
+      const p = state.pending.find(x => x.id === id);
+      if (!p || total <= 0) return;
+      const f = fecha || today();
+      const paid = { ...p, paid: true };
+      const debt = abono > 0 && p.debt_id ? state.debts.find(d => d.id === p.debt_id) : null;
+      // Acotamos el abono al saldo de la deuda ANTES de repartir, para que el gasto
+      // de servicios reciba correctamente el resto y nada quede mal contabilizado.
+      const abonoReal = debt ? Math.min(abono, debt.saldo, total) : 0;
+      const gastoServicios = debt ? Math.max(0, total - abonoReal) : total;
+
+      const newTxs = [];
+      if (gastoServicios > 0) {
+        newTxs.push({ id: uid(), d: f, desc: 'Pago: ' + p.name, amt: -gastoServicios, cat: p.cat, acc: 'Nu', note: debt ? 'Servicios (recibo doble)' : 'Pendiente pagado' });
+      }
+
+      let updatedDebt = null, debtPago = null;
+      if (debt && abonoReal > 0) {
+        updatedDebt = { ...debt, saldo: Math.max(0, debt.saldo - abonoReal) };
+        debtPago = { id: uid(), debt_id: debt.id, fecha: f, monto: abonoReal };
+        newTxs.push({ id: uid(), d: f, desc: 'Cuota tarjeta: ' + debt.acreedor, amt: -abonoReal, cat: 'Deudas', acc: 'Nu', note: 'Abono desde recibo ' + p.name });
+      }
+
+      setState(s => ({
+        ...s,
+        pending: s.pending.map(x => x.id === id ? paid : x),
+        debts: updatedDebt ? s.debts.map(x => x.id === updatedDebt.id ? updatedDebt : x) : s.debts,
+        debt_payments: debtPago ? [...s.debt_payments, debtPago] : s.debt_payments,
+        txs: [...newTxs, ...s.txs],
+      }));
+
+      await Storage.upsertPending(paid);
+      for (const t of newTxs) await Storage.upsertTx(t);
+      if (updatedDebt) { await Storage.upsertDebt(updatedDebt); await Storage.insertDebtPayment(debtPago); }
+      notify(updatedDebt && updatedDebt.saldo === 0 ? '🎉 ¡deuda cerrada!' : '✓ pago confirmado');
+    },
     async markUnpaid(id) {
       const p = state.pending.find(x => x.id === id);
       if (!p) return;

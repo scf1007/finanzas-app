@@ -5,8 +5,8 @@ import { PendingCalendar } from '../components/PendingCalendar';
 
 const RECUR_LABEL = { monthly: '↺ mensual', bimonthly: '↺ bimestral', yearly: '↺ anual' };
 
-export default function Pendientes({ onEdit, onAdd }) {
-  const { state, markPaid, markUnpaid, deletePending } = useStore();
+export default function Pendientes({ onEdit, onAdd, onPayPending }) {
+  const { state, markUnpaid, deletePending } = useStore();
   const [tab, setTab] = useState('all');
   const [vista, setVista] = useState('lista'); // 'lista' | 'calendario'
 
@@ -61,7 +61,7 @@ export default function Pendientes({ onEdit, onAdd }) {
 
       {vista === 'calendario' ? (
         <div className="card">
-          <PendingCalendar pending={state.pending} onPay={markPaid} onEdit={onEdit} />
+          <PendingCalendar pending={state.pending} onPay={onPayPending} onEdit={onEdit} />
         </div>
       ) : (
         <div className="card">
@@ -86,7 +86,7 @@ export default function Pendientes({ onEdit, onAdd }) {
                   <div className={'pending-amt' + (over ? ' amt-neg' : '')}>{fmtFull(p.amt)}</div>
                   <div className="pending-actions">
                     {!p.paid
-                      ? <button className="btn btn-ghost btn-sm" onClick={() => markPaid(p.id)}>✓ Pagar</button>
+                      ? <button className="btn btn-ghost btn-sm" onClick={() => onPayPending(p)}>✓ Pagar</button>
                       : <button className="btn btn-ghost btn-sm" onClick={() => markUnpaid(p.id)}>↩</button>}
                     <button className="btn btn-ghost btn-sm" onClick={() => onEdit(p)}>✎</button>
                     <button className="btn btn-danger btn-sm" onClick={() => { if (confirm('¿Eliminar?')) deletePending(p.id); }}>✕</button>
